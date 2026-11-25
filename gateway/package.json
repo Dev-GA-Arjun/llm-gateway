@@ -10,5 +10,8 @@
   "dependencies": {
     "dotenv": "^18.0.10",
     "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "autocannon": "^9.0.0"
   }
 }
