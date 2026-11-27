@@ -1,42 +1,228 @@
-# LLM Gateway
+# Multi-Provider LLM Gateway
 
-A simple Node.js and Express gateway that forwards Gemini-compatible
-`generateContent` requests to an upstream server. A deterministic mock LLM is
-included for local testing.
+A Node.js and Express-based LLM gateway experiment that explores routing requests across local and cloud inference providers through a common interface.
+
+The project includes:
+
+- **Ollama:** Local LLM inference through an OpenAI-compatible chat completion endpoint.
+- **Gemini:** Integration with Google's Gemini Interactions API.
+- **Mock LLM:** A deterministic Gemini-compatible mock server for controlled testing.
+- **Benchmark logging:** JSONL-based request latency and token usage recording.
+
+## Architecture
+
+```text
+                  Client
+                    |
+                    v
+             Express Gateway
+                    |
+          +---------+---------+
+          |                   |
+          v                   v
+       Ollama               Gemini
+    Local inference      Cloud API
+          |
+          v
+    Response adapter
+
+     Independent Mock Server
+     (controlled responses)
+
+     Benchmark Logger
+             |
+             v
+      notes/results.jsonl
+```
+
+The gateway currently supports Ollama and Gemini provider routing. The mock server runs independently and is not currently connected to the gateway's routing logic.
+
+## Project Structure
+
+```text
+llm-gateway/
+├── gateway/
+│   ├── server.js
+│   ├── benchmark.js
+│   └── package.json
+├── ollama-local-llm/
+│   ├── client.js
+│   ├── adapter.js
+│   └── tests.js
+├── gemini-cloud-llm/
+│   └── client.js
+├── mock-llm/
+│   ├── server.js
+│   └── package.json
+├── notes/
+│   ├── log.md
+│   └── results.jsonl
+├── prompts/
+├── vis-docs/
+├── .env.example
+└── README.md
+```
 
 ## Requirements
 
-- Node.js 18 or newer (the gateway uses Node's built-in `fetch`)
+- Node.js 18 or newer
 - npm
+- Ollama with an available model for local inference
+- Google Gemini API key for cloud integration
 
-## Install dependencies
+## Installation
 
-Install each app's dependencies separately:
+Install gateway dependencies:
 
 ```powershell
-cd mock-llm
-npm install
-cd ..\gateway
+cd gateway
 npm install
 cd ..
 ```
 
-## Configure and start
-
-The gateway reads `PORT` (default `3000`) and `UPSTREAM_URL`. The upstream URL
-is a base URL; the gateway appends the incoming Gemini API path to it. Copy
-[`.env.example`](./.env.example) as a reference and set these variables in the
-shell where you start the gateway:
+Install mock server dependencies:
 
 ```powershell
-$env:PORT = "3000"
-$env:UPSTREAM_URL = "http://localhost:4000"
+cd mock-llm
+npm install
+cd ..
+```
+
+## Configuration
+
+Copy `.env.example` to `.env` in the repository root.
+
+Configure the required environment variables:
+
+| Variable          | Description                               |
+| ----------------- | ----------------------------------------- |
+| `PORT`            | Gateway port. Default: `3000`             |
+| `PROVIDER`        | `ollama` or `gemini`                      |
+| `OLLAMA_BASE_URL` | Ollama OpenAI-compatible API base URL     |
+| `OLLAMA_MODEL`    | Local Ollama model name                   |
+| `GEMINI_API_KEY`  | Google Gemini API key                     |
+| `GEMINI_MODEL`    | Gemini model metadata used by the gateway |
+
+### Ollama
+
+Example configuration:
+
+```dotenv
+PORT=3000
+PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.2:3b
+```
+
+Start Ollama separately, then start the gateway:
+
+```powershell
 cd gateway
 npm start
 ```
 
-Start the mock server in a separate terminal. It reads `PORT` and defaults to
-`4000`:
+### Gemini
+
+Example configuration:
+
+```dotenv
+PORT=3000
+PROVIDER=gemini
+GEMINI_API_KEY=your-google-gemini-api-key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Start the gateway:
+
+```powershell
+cd gateway
+npm start
+```
+
+## Mock Gateway Load Testing
+
+The project also includes a separate load-testing experiment using a deterministic mock LLM server and HTTP load testing.
+
+Seven baseline test configurations were recorded with different concurrency levels:
+
+| Test | Concurrent Connections |
+|---|---:|
+| Baseline C1 | 1 |
+| Baseline C5 | 5 |
+| Baseline C10 | 10 |
+| Baseline C25 | 25 |
+| Baseline C50 | 50 |
+| Baseline C100 | 100 |
+| Baseline C1000 | 1000 |
+
+The load-testing results capture:
+
+- Average and percentile latency (p50, p90, p99).
+- Request throughput.
+- Total requests and samples.
+- HTTP status-code distribution.
+- Errors, timeouts and connection resets.
+
+Raw benchmark outputs are available in the `results/` directory in NDJSON format.
+
+These tests evaluate gateway behaviour under concurrent HTTP load. They are separate from the Ollama and Gemini inference benchmarks and should not be interpreted as LLM inference performance measurements.
+
+## API Endpoints
+
+| Method | Endpoint                             | Description                                                                  |
+| ------ | ------------------------------------ | ---------------------------------------------------------------------------- |
+| GET    | `/health`                            | Gateway health check                                                         |
+| POST   | `/v1/models/{model}:generateContent` | Gemini-compatible request routed to Ollama or the configured Gemini provider |
+| POST   | `/v1/interactions`                   | Gemini Interactions API request                                              |
+
+### Generate Content
+
+The `generateContent` endpoint accepts a Gemini-format request.
+
+When `PROVIDER=ollama`, the gateway:
+
+1. Extracts the first text part from the request.
+2. Converts it into an OpenAI-compatible chat message.
+3. Sends it to Ollama.
+4. Converts the response back into a Gemini-compatible response.
+
+Example request:
+
+```json
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Explain what an API gateway is."
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Gemini Interactions API
+
+The `/v1/interactions` endpoint forwards requests to Google's Interactions API.
+
+It requires `PROVIDER=gemini` and a request body containing `model` and `input`.
+
+Example:
+
+```json
+{
+  "model": "gemini-2.5-flash",
+  "input": "Explain what an API gateway is."
+}
+```
+
+## Mock LLM Server
+
+The mock server provides a deterministic Gemini-compatible response after a fixed two-second delay.
+
+Start it independently:
 
 ```powershell
 $env:PORT = "4000"
@@ -44,31 +230,80 @@ cd mock-llm
 npm start
 ```
 
-## Endpoints
-
-- `GET /health` — gateway health check
-- `POST /v1/models/{model}:generateContent` — gateway and mock generate-content endpoint
-
-The mock waits exactly two seconds before returning the same Gemini-compatible
-response on every request.
-
-## Test with curl
-
-Check gateway health:
+Test it:
 
 ```powershell
-curl.exe http://localhost:3000/health
+curl.exe --% -X POST http://localhost:4000/v1/models/test-model:generateContent -H "Content-Type: application/json" -d "{\"contents\":[{\"parts\":[{\"text\":\"Say hello\"}]}]}"
 ```
 
-Send a Gemini-format request through the gateway. The `Authorization` header,
-when supplied, is forwarded to the upstream:
+The mock server is intended for controlled testing. It does not perform actual model inference.
 
-```powershell
-curl.exe --% -X POST http://localhost:3000/v1/models/gemini-1.5-flash:generateContent -H "Content-Type: application/json" -H "Authorization: Bearer example-token" -d "{\"contents\":[{\"parts\":[{\"text\":\"Say hello\"}]}]}"
-```
+## Benchmarking
 
-In PowerShell, `--%` prevents PowerShell from stripping the JSON quotes. Keep
-this command on one line.
+The gateway records benchmark samples in:
 
-The same request can be sent directly to the mock at
-`http://localhost:4000/v1/models/gemini-1.5-flash:generateContent`.
+`notes/results.jsonl`
+
+Each JSONL record contains:
+
+- Timestamp
+- Provider and model
+- Total request latency
+- Provider inference latency
+- Gateway overhead
+- Prompt and completion token counts, when available
+- Tokens per second
+- Finish reason
+- HTTP status
+
+The benchmark uses Node.js high-resolution timing through `process.hrtime.bigint()`.
+
+### Ollama Benchmark
+
+<text>Model: `llama3.2:3b`</text>
+
+The primary benchmark consists of 10 measured requests using similar technical prompts and consistent generation settings.
+
+One warm-up request and one separate broad-prompt test were excluded from the primary statistics.
+
+| Metric                   |           Result |
+| ------------------------ | ---------------: |
+| Measured requests        |               10 |
+| Average total latency    |    7.064 seconds |
+| Median total latency     |    6.941 seconds |
+| Minimum total latency    |    6.167 seconds |
+| Maximum total latency    |    8.053 seconds |
+| Average throughput       | 13.23 tokens/sec |
+| Average gateway overhead |          1.67 ms |
+| Successful requests      |            10/10 |
+
+These results represent this specific setup and workload, not a general performance claim about Ollama or the model.
+
+### Gemini Integration Status
+
+The Gemini Interactions API client and gateway route have been implemented.
+
+However, test requests returned HTTP 502 because the upstream Gemini requests did not complete successfully. Successful inference and cloud performance measurements have not yet been verified.
+
+A three-provider performance comparison is therefore not available.
+
+## Current Limitations
+
+- The Ollama adapter currently extracts only the first text part from the first content item.
+- The mock server is independent and is not integrated into gateway provider routing.
+- Gemini Interactions API integration still requires successful inference verification.
+- The `generateContent` Gemini branch and the Interactions API client currently use different request formats and should not be treated as interchangeable.
+- Benchmark records are append-only and include failed requests as well as successful requests.
+
+## Future Improvements
+
+- Integrate the mock server into gateway routing.
+- Improve request and response adapters.
+- Verify successful Gemini inference.
+- Add repeatable load testing.
+- Compare local and cloud inference under controlled workloads.
+- Add benchmark visualization and automated reporting.
+
+## License
+
+MIT License

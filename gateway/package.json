@@ -1,0 +1,17 @@
+{
+  "name": "llm-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A simple Gemini-compatible LLM gateway",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.10",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "autocannon": "^9.0.0"
+  }
+}
