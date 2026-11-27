@@ -1,7 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-const resultsPath = path.resolve(__dirname, '../notes/ollama-results.jsonl');
+const resultsPath = path.resolve(__dirname, '../notes/results.jsonl');
 let pendingWrite = Promise.resolve();
 
 function createTimer() {
