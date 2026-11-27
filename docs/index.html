@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LLM gateway benchmark results: latency and throughput for Ollama and Gemini.">
+    <title>LLM Gateway Benchmark</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <header class="header">
+        <p class="meta">Benchmark run &middot; notes/results.jsonl</p>
+        <h1>LLM gateway benchmark</h1>
+        <p class="lede">Latency and throughput of one gateway server, measured against a local Ollama model and Gemini.</p>
+    </header>
+
+    <main>
+        <section class="overview" aria-labelledby="h-overview">
+            <h2 id="h-overview">Summary</h2>
+            <div class="metrics-grid" id="metrics">
+                <p>Loading metrics...</p>
+            </div>
+        </section>
+
+        <section class="charts-section" aria-labelledby="h-charts">
+            <h2 id="h-charts">Per-request results</h2>
+            <p class="section-note">Successful requests only. X axis is request order, not elapsed time.</p>
+            <div class="charts-grid">
+                <article class="panel">
+                    <h3>Latency <span class="unit">seconds</span></h3>
+                    <canvas id="latencyChart"></canvas>
+                </article>
+                <article class="panel">
+                    <h3>Throughput <span class="unit">tokens / second</span></h3>
+                    <canvas id="throughputChart"></canvas>
+                </article>
+            </div>
+        </section>
+
+        <section class="results-section" aria-labelledby="h-requests">
+            <h2 id="h-requests">All requests</h2>
+
+            <div class="filters">
+                <input id="searchInput" type="search" aria-label="Search model or provider"
+                    placeholder="Filter by model or provider">
+
+                <select id="providerFilter" aria-label="Provider">
+                    <option value="all">All providers</option>
+                    <option value="ollama">Ollama</option>
+                    <option value="gemini">Gemini</option>
+                </select>
+
+                <select id="statusFilter" aria-label="Status">
+                    <option value="all">All statuses</option>
+                    <option value="success">Success</option>
+                    <option value="failed">Failed</option>
+                </select>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Provider</th>
+                            <th>Model</th>
+                            <th class="num">Latency</th>
+                            <th class="num">Tokens/sec</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTable">
+                        <tr><td colspan="6">Loading results...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="resultCount" class="result-count"></p>
+        </section>
+
+        <footer>
+            <p>LLM Gateway Benchmark</p>
+            <p>Source: notes/results.jsonl</p>
+        </footer>
+    </main>
+</body>
+</html>

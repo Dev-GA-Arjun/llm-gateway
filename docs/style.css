@@ -1,0 +1,301 @@
+/* Report-style dashboard. One accent, hairline rules, mono for numbers.
+   Chart colors: read --data and --fail from here in app.js (see notes). */
+
+:root {
+    color-scheme: light dark;
+
+    --paper: #f5f4ef;
+    --ink: #1b1b1a;
+    --muted: #5d5d58;
+    --rule: #d9d7cd;
+    --rule-strong: #1b1b1a;
+    --data: #2f4f6f;
+    --fail: #b0381c;
+    --hover: #ecebe3;
+
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+    --measure: 72rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --paper: #151514;
+        --ink: #ecebe4;
+        --muted: #a3a29a;
+        --rule: #333330;
+        --rule-strong: #ecebe4;
+        --data: #8fb0d1;
+        --fail: #e6735a;
+        --hover: #1e1e1c;
+    }
+}
+
+* { box-sizing: border-box; }
+
+html, body { overflow-x: clip; }
+
+body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+.header,
+main {
+    width: min(100%, var(--measure));
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 4vw, 2rem);
+}
+
+/* Header */
+.header { padding-top: 3.5rem; padding-bottom: 2rem; }
+
+.meta {
+    margin: 0 0 0.75rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+
+.lede {
+    max-width: 38rem;
+    margin: 0.75rem 0 0;
+    color: var(--muted);
+}
+
+/* Sections */
+section { margin-bottom: 3.5rem; }
+
+h2 {
+    margin: 0 0 1rem;
+    padding-top: 0.75rem;
+    border-top: 2px solid var(--rule-strong);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.section-note {
+    margin: -0.5rem 0 1.25rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+}
+
+/* Summary: one ruled strip, no cards */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+}
+
+.metric-card {
+    min-width: 0;
+    padding: 1.25rem 1.25rem 1.25rem 0;
+}
+
+.metric-card + .metric-card {
+    padding-left: 1.25rem;
+    border-left: 1px solid var(--rule);
+}
+
+.metric-label {
+    font-size: 0.8125rem;
+    color: var(--muted);
+}
+
+.metric-value {
+    margin: 0.35rem 0 0.25rem;
+    font-family: var(--mono);
+    font-size: clamp(1.5rem, 2.6vw, 1.875rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.metric-note {
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+/* Charts */
+.charts-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 2.5rem;
+}
+
+.panel { min-width: 0; }
+
+.panel h3 {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.panel .unit {
+    margin-left: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--muted);
+}
+
+.panel canvas {
+    display: block;
+    width: 100%;
+    height: 18rem !important;
+    max-height: 18rem;
+}
+
+/* Controls */
+.filters {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+input,
+select {
+    min-height: 2.5rem;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.875rem;
+}
+
+input { flex: 1 1 auto; min-width: 0; padding: 0 0.75rem; }
+select { flex: 0 0 auto; min-width: 9rem; padding: 0 0.75rem; }
+
+input::placeholder { color: var(--muted); opacity: 1; }
+
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--data);
+    outline-offset: 1px;
+}
+
+input:disabled,
+select:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* Table: rules only */
+.table-wrapper {
+    overflow-x: auto;
+    border-top: 1px solid var(--rule-strong);
+    border-bottom: 1px solid var(--rule);
+}
+
+table {
+    width: 100%;
+    min-width: 700px;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+th,
+td {
+    padding: 0.625rem 1rem 0.625rem 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+th {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+td {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+th.num,
+td:nth-child(4),
+td:nth-child(5) { text-align: right; }
+
+th.num { padding-right: 2rem; }
+td:nth-child(4),
+td:nth-child(5) { padding-right: 2rem; }
+
+tbody tr:last-child td { border-bottom: 0; }
+
+/* Status as plain colored text, not pills */
+.status {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status.success { color: var(--muted); }
+.status.failed { color: var(--fail); }
+.status.failed::before { content: "\00d7\00a0"; }
+
+.result-count {
+    margin: 0.75rem 0 0;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 0 2.5rem;
+    border-top: 1px solid var(--rule);
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+footer p { margin: 0; }
+
+@media (hover: hover) and (pointer: fine) {
+    tbody tr:hover { background: var(--hover); }
+    input:hover:not(:disabled),
+    select:hover:not(:disabled) { border-color: var(--muted); }
+}
+
+@media (max-width: 58rem) {
+    .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .metric-card:nth-child(3) { padding-left: 0; border-left: 0; }
+    .metric-card:nth-child(n+3) { border-top: 1px solid var(--rule); }
+    .charts-grid { grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+}
+
+@media (max-width: 40rem) {
+    .header { padding-top: 2rem; }
+    .filters { flex-direction: column; }
+    input, select { width: 100%; }
+    footer { flex-direction: column; gap: 0.25rem; }
+}
+
+@media (max-width: 24rem) {
+    .metrics-grid { grid-template-columns: minmax(0, 1fr); }
+    .metric-card,
+    .metric-card + .metric-card { padding-left: 0; border-left: 0; }
+    .metric-card + .metric-card { border-top: 1px solid var(--rule); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { scroll-behavior: auto !important; transition: none !important; }
+}
