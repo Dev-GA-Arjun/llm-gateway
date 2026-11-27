@@ -139,6 +139,34 @@ cd gateway
 npm start
 ```
 
+## Mock Gateway Load Testing
+
+The project also includes a separate load-testing experiment using a deterministic mock LLM server and HTTP load testing.
+
+Seven baseline test configurations were recorded with different concurrency levels:
+
+| Test | Concurrent Connections |
+|---|---:|
+| Baseline C1 | 1 |
+| Baseline C5 | 5 |
+| Baseline C10 | 10 |
+| Baseline C25 | 25 |
+| Baseline C50 | 50 |
+| Baseline C100 | 100 |
+| Baseline C1000 | 1000 |
+
+The load-testing results capture:
+
+- Average and percentile latency (p50, p90, p99).
+- Request throughput.
+- Total requests and samples.
+- HTTP status-code distribution.
+- Errors, timeouts and connection resets.
+
+Raw benchmark outputs are available in the `results/` directory in NDJSON format.
+
+These tests evaluate gateway behaviour under concurrent HTTP load. They are separate from the Ollama and Gemini inference benchmarks and should not be interpreted as LLM inference performance measurements.
+
 ## API Endpoints
 
 | Method | Endpoint                             | Description                                                                  |
